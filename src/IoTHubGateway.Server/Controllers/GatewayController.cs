@@ -1,8 +1,7 @@
-﻿using IoTHubGateway.Server.Services;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using IoTHubGateway.Server.Services;
 
 namespace IoTHubGateway.Server.Controllers
 {
@@ -23,7 +22,7 @@ namespace IoTHubGateway.Server.Controllers
         /// Sends a message for the given device
         /// </summary>
         /// <param name="deviceId">Device identifier</param>
-        /// <param name="payload">Payload (JSON format)</param>
+        /// <param name="payload">Message payload (JSON format)</param>
         /// <returns></returns>
         [HttpPost("{deviceId}")]
         public async Task<IActionResult> Send(string deviceId, [FromBody] dynamic payload)
@@ -51,6 +50,72 @@ namespace IoTHubGateway.Server.Controllers
             }
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Update reported twin properties for the given device
+        /// </summary>
+        /// <param name="deviceId">Device identifier</param>
+        /// <param name="payload">Device twin (JSON format)</param>
+        /// <returns></returns>
+        [HttpPost("{deviceId}/properties")]
+        public async Task<IActionResult> SendProperties(string deviceId, [FromBody] dynamic payload)
+        {
+            if (string.IsNullOrEmpty(deviceId))
+                return BadRequest(new { error = "Missing deviceId" });
+
+            if (payload == null)
+                return BadRequest(new { error = "Missing payload" });
+            
+            var sasToken = this.ControllerContext.HttpContext.Request.Headers[Constants.SasTokenHeaderName].ToString();
+            if (!string.IsNullOrEmpty(sasToken))
+            {
+                var tokenExpirationDate = ResolveTokenExpiration(sasToken);
+                if (!tokenExpirationDate.HasValue)
+                    tokenExpirationDate = DateTime.UtcNow.AddMinutes(20);
+
+                await gatewayService.UpdateDeviceReportedPropertiesByToken(deviceId, payload.ToString(), sasToken, tokenExpirationDate.Value);
+            }
+            else
+            {
+                if (!this.options.SharedAccessPolicyKeyEnabled)
+                    return BadRequest(new { error = "Shared access is not enabled" });
+                await gatewayService.UpdateDeviceReportedPropertiesBySharedAccess(deviceId, payload.ToString());
+            }
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Get device twin for the given device
+        /// </summary>
+        /// <param name="deviceId">Device identifier</param>
+        /// <returns></returns>
+        [HttpGet("{deviceId}/twin")]
+        public async Task<IActionResult> GetTwin(string deviceId)
+        {
+            if (string.IsNullOrEmpty(deviceId))
+                return BadRequest(new { error = "Missing deviceId" });
+
+            string twin = "";
+            
+            var sasToken = this.ControllerContext.HttpContext.Request.Headers[Constants.SasTokenHeaderName].ToString();
+            if (!string.IsNullOrEmpty(sasToken))
+            {
+                var tokenExpirationDate = ResolveTokenExpiration(sasToken);
+                if (!tokenExpirationDate.HasValue)
+                    tokenExpirationDate = DateTime.UtcNow.AddMinutes(20);
+
+                twin = await gatewayService.GetDeviceTwinByToken(deviceId, sasToken, tokenExpirationDate.Value);
+            }
+            else
+            {
+                if (!this.options.SharedAccessPolicyKeyEnabled)
+                    return BadRequest(new { error = "Shared access is not enabled" });
+                twin = await gatewayService.GetDeviceTwinBySharedAccess(deviceId);
+            }
+
+            return Ok(twin);
         }
 
         /// <summary>

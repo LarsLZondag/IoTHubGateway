@@ -1,15 +1,10 @@
-
+using System;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
+using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
 
 namespace IoTHubGateway.Server.Services
 {
@@ -62,7 +57,6 @@ namespace IoTHubGateway.Server.Services
                 this.logger.LogError(ex, $"Could not send device message to IoT Hub (device: {deviceId})");
                 throw;
             }
-
         }
 
         public async Task SendDeviceToCloudMessageBySharedAccess(string deviceId, string payload)
@@ -84,7 +78,82 @@ namespace IoTHubGateway.Server.Services
                 this.logger.LogError(ex, $"Could not send device message to IoT Hub (device: {deviceId})");
                 throw;
             }
+        }
 
+        public async Task UpdateDeviceReportedPropertiesByToken(string deviceId, string payload, string sasToken, DateTime tokenExpiration)
+        {
+            var deviceClient = await ResolveDeviceClient(deviceId, sasToken, tokenExpiration);
+            if (deviceClient == null)
+                throw new DeviceConnectionException($"Failed to connect to device {deviceId}");
+
+            try
+            {
+                await deviceClient.UpdateReportedPropertiesAsync(new TwinCollection(payload));
+
+                this.logger.LogInformation($"Update reported properties for device {deviceId} using device token. Payload: {payload}");
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"Could not update reported properties on IoT Hub (device: {deviceId})");
+                throw;
+            }
+        }
+
+        public async Task UpdateDeviceReportedPropertiesBySharedAccess(string deviceId, string payload)
+        {
+            var deviceClient = await ResolveDeviceClient(deviceId);
+
+            try
+            { 
+                await deviceClient.UpdateReportedPropertiesAsync(new TwinCollection(payload));
+
+                this.logger.LogInformation($"Update reported properties for device {deviceId} using shared access. Payload: {payload}");
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"Could not update reported properties on IoT Hub (device: {deviceId})");
+                throw;
+            }
+        }
+ 
+        public async Task<string> GetDeviceTwinByToken(string deviceId, string sasToken, DateTime tokenExpiration)
+        {
+            var deviceClient = await ResolveDeviceClient(deviceId, sasToken, tokenExpiration);
+            if (deviceClient == null)
+                throw new DeviceConnectionException($"Failed to connect to device {deviceId}");
+
+            try
+            {
+                Twin twin = await deviceClient.GetTwinAsync().ConfigureAwait(false);
+
+                this.logger.LogInformation($"Device twin retrieved for device {deviceId} using device token.");             
+
+                return twin.ToJson();
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"Could not retrieve device twin (device: {deviceId})");
+                throw;
+            }
+        }
+
+        public async Task<string> GetDeviceTwinBySharedAccess(string deviceId)
+        {
+            var deviceClient = await ResolveDeviceClient(deviceId);
+
+            try
+            { 
+                Twin twin = await deviceClient.GetTwinAsync().ConfigureAwait(false);
+
+                this.logger.LogInformation($"Device twin retrieved for device{deviceId} using shared access.");
+
+                return twin.ToJson();
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, $"Could not retrieve device twin (device: {deviceId})");
+                throw;
+            }
         }
 
         private async Task<DeviceClient> ResolveDeviceClient(string deviceId, string sasToken = null, DateTime? tokenExpiration = null)
