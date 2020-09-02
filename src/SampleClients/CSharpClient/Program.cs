@@ -1,8 +1,9 @@
-﻿using Microsoft.Azure.Devices.Client;
-using System;
+﻿using System;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Azure.Devices.Client;
 
 namespace CSharpClient
 {
@@ -23,21 +24,21 @@ namespace CSharpClient
             }
             .ToSignature();
 
-            int port = 5000;
+            int port = 5001;
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("sas_token", sasToken);
                 while (true)
                 {
-                    var response = await client.PostAsync($"http://localhost:{port}/api/{deviceId}", new StringContent("{ content: 'from_rest_call' }", Encoding.UTF8, "application/json"));
+                    var response = await client.PostAsync($"https://localhost:{port}/gateway/{deviceId}", new StringContent("{ \"content\": \"from_rest_call\" }", Encoding.UTF8, "application/json"));
                     Console.WriteLine($"Response: {response.StatusCode.ToString()}");
 
-                    response = await client.GetAsync($"http://localhost:{port}/api/{deviceId}/twin");
+                    response = await client.GetAsync($"https://localhost:{port}/gateway/{deviceId}/twin");
                     Console.WriteLine($"Response: {response.StatusCode.ToString()}");
-                    var content = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Twin: {content}");
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Twin: {responseContent}");
 
-                    response = await client.PostAsync($"http://localhost:{port}/api/{deviceId}/properties", new StringContent("{ content: 'from_rest_call' }", Encoding.UTF8, "application/json"));
+                    response = await client.PostAsync($"https://localhost:{port}/gateway/{deviceId}/properties", new StringContent("{ \"content\": \"from_rest_call\" }", Encoding.UTF8, "application/json"));
                     Console.WriteLine($"Response: {response.StatusCode.ToString()}");
 
                     await Task.Delay(200);
