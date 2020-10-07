@@ -287,3 +287,6 @@ __pycache__/
 *.btm.cs
 *.odx.cs
 *.xsd.cs
+src/IoTHubGateway.Server/Properties/ServiceDependencies/IoTHubGatewayServer20200924092731 - Web Deploy/profile.arm.json
+src/IoTHubGateway.Server/appsettings.Development.json
+src/IoTHubGateway.Server/appsettings.Development.json

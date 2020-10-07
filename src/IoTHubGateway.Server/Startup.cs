@@ -34,10 +34,9 @@ namespace IoTHubGateway.Server
             Configuration.GetSection(nameof(ServerOptions)).Bind(options);
             services.AddSingleton<ServerOptions>(options);
 
-            if (options.CloudMessagesEnabled)
-            {
-                //services.AddSingleton<IHostedService, CloudToMessageListenerJobHostedService>();
-            }
+            options.IoTHubHostName = Environment.GetEnvironmentVariable("IoTHubHostName");
+
+     
 
 #if DEBUG
             SetupDebugListeners(options);
@@ -66,13 +65,7 @@ namespace IoTHubGateway.Server
                };
            }
 
-           if (options.CloudMessagesEnabled && options.CloudMessageCallback == null)
-           {
-               options.CloudMessageCallback = (deviceId, message) =>
-               {
-                   Console.WriteLine($"[{DateTime.Now.ToString()}] Cloud message for {deviceId} received");
-               };
-           }
+         
         }
 #endif
 
@@ -83,6 +76,7 @@ namespace IoTHubGateway.Server
             {
                 app.UseDeveloperExceptionPage();
             }
+     
 
             app.UseHttpsRedirection();
 
