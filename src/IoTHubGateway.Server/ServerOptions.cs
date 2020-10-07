@@ -1,8 +1,5 @@
-﻿using Microsoft.Azure.Devices.Client;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
+using Microsoft.Azure.Devices.Client;
 
 namespace IoTHubGateway.Server
 {
@@ -11,12 +8,11 @@ namespace IoTHubGateway.Server
     /// </summary>
     public class ServerOptions
     {
-
         /// <summary>
         /// Device operation timeout (in milliseconds)
         /// Default: 10000 (10 seconds)
         /// </summary>
-        public int DeviceOperationTimeout { get; set; } =  1000 * 10;
+        public int DeviceOperationTimeout { get; set; } = 1000 * 10;
 
         /// <summary>
         /// IoT Hub host name. Something like xxxxx.azure-devices.net
@@ -58,7 +54,7 @@ namespace IoTHubGateway.Server
         /// <summary>
         /// Gets/sets the callback to handle device direct methods
         /// </summary>
-        public MethodCallback DirectMethodCallback { get; set; }        
+        public MethodCallback DirectMethodCallback { get; set; }
 
         /// <summary>
         /// Enable/disables cloud messages in the gateway
@@ -71,7 +67,6 @@ namespace IoTHubGateway.Server
         /// Degree of parallelism used to check for cloud messages
         /// </summary>
         public int CloudMessageParallelism { get; set; } = 10;
-
 
         /// <summary>
         /// Gets/sets the callback to handle cloud messages

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
@@ -64,7 +64,7 @@ namespace IoTHubGateway.Server.Services
             var deviceClient = await ResolveDeviceClient(deviceId);
 
             try
-            { 
+            {
                 await deviceClient.SendEventAsync(new Message(Encoding.UTF8.GetBytes(payload))
                 {
                     ContentEncoding = "utf-8",
@@ -80,7 +80,7 @@ namespace IoTHubGateway.Server.Services
             }
         }
 
-        public async Task UpdateDeviceReportedPropertiesByToken(string deviceId, string payload, string sasToken, DateTime tokenExpiration)
+        public async Task SendDeviceReportedPropertiesByToken(string deviceId, string payload, string sasToken, DateTime tokenExpiration)
         {
             var deviceClient = await ResolveDeviceClient(deviceId, sasToken, tokenExpiration);
             if (deviceClient == null)
@@ -90,32 +90,32 @@ namespace IoTHubGateway.Server.Services
             {
                 await deviceClient.UpdateReportedPropertiesAsync(new TwinCollection(payload));
 
-                this.logger.LogInformation($"Update reported properties for device {deviceId} using device token. Payload: {payload}");
+                this.logger.LogInformation($"Properties sent to device {deviceId} using device token. Payload: {payload}");
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, $"Could not update reported properties on IoT Hub (device: {deviceId})");
+                this.logger.LogError(ex, $"Could not send device properties to IoT Hub (device: {deviceId})");
                 throw;
             }
         }
 
-        public async Task UpdateDeviceReportedPropertiesBySharedAccess(string deviceId, string payload)
+        public async Task SendDeviceReportedPropertiesBySharedAccess(string deviceId, string payload)
         {
             var deviceClient = await ResolveDeviceClient(deviceId);
 
             try
-            { 
+            {
                 await deviceClient.UpdateReportedPropertiesAsync(new TwinCollection(payload));
 
-                this.logger.LogInformation($"Update reported properties for device {deviceId} using shared access. Payload: {payload}");
+                this.logger.LogInformation($"Properties sent to device {deviceId} using shared access. Payload: {payload}");
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, $"Could not update reported properties on IoT Hub (device: {deviceId})");
+                this.logger.LogError(ex, $"Could not send device properties to IoT Hub (device: {deviceId})");
                 throw;
             }
         }
- 
+
         public async Task<string> GetDeviceTwinByToken(string deviceId, string sasToken, DateTime tokenExpiration)
         {
             var deviceClient = await ResolveDeviceClient(deviceId, sasToken, tokenExpiration);
@@ -126,7 +126,7 @@ namespace IoTHubGateway.Server.Services
             {
                 Twin twin = await deviceClient.GetTwinAsync().ConfigureAwait(false);
 
-                this.logger.LogInformation($"Device twin retrieved for device {deviceId} using device token.");             
+                this.logger.LogInformation($"Twin retrieved from device {deviceId} using device token.");
 
                 return twin.ToJson();
             }
@@ -142,10 +142,10 @@ namespace IoTHubGateway.Server.Services
             var deviceClient = await ResolveDeviceClient(deviceId);
 
             try
-            { 
+            {
                 Twin twin = await deviceClient.GetTwinAsync().ConfigureAwait(false);
 
-                this.logger.LogInformation($"Device twin retrieved for device{deviceId} using shared access.");
+                this.logger.LogInformation($"Twin retrieved from device{deviceId} using shared access.");
 
                 return twin.ToJson();
             }
@@ -193,7 +193,7 @@ namespace IoTHubGateway.Server.Services
                     await newDeviceClient.OpenAsync();
 
                     if (this.serverOptions.DirectMethodEnabled)
-                        await newDeviceClient.SetMethodDefaultHandlerAsync(this.serverOptions.DirectMethodCallback, deviceId);
+                       await newDeviceClient.SetMethodDefaultHandlerAsync(this.serverOptions.DirectMethodCallback, deviceId);
 
                     if (!tokenExpiration.HasValue)
                         tokenExpiration = DateTime.UtcNow.AddMinutes(this.serverOptions.DefaultDeviceCacheInMinutes);
@@ -202,12 +202,10 @@ namespace IoTHubGateway.Server.Services
 
                     this.logger.LogInformation($"Connection to device {deviceId} has been established, valid until {tokenExpiration.Value.ToString()}");
 
-
                     registeredDevices.AddDevice(deviceId);
 
                     return newDeviceClient;
                 });
-
 
                 return deviceClient;
             }
